@@ -1,0 +1,118 @@
+import random
+from datetime import datetime
+import requests
+import os
+import time
+from flask import Flask, request, jsonify
+from threading import Thread
+import pytz  # Добавляем импорт pytz
+
+app = Flask(__name__)
+
+# === Списки вместо MongoDB ===
+my_data = []
+log_data = []
+
+# === Список соседей ===
+NEIGHBORS = [
+    "http://node1:5000",
+    "http://node2:5000",
+    "http://node3:5000"
+]
+
+# Имя текущего узла
+THIS_NODE = os.getenv("THIS_NODE", "node2")
+
+# Функция для получения текущего времени в нужной временной зоне
+def get_current_time():
+    moscow_tz = pytz.timezone('Europe/Moscow')
+    return datetime.now(moscow_tz).strftime("%Y-%m-%d %H:%M:%S")
+
+# === Эндпоинт для получения данных ===
+@app.route('/data', methods=['POST'])
+def receive_data():
+    content = request.json.get("data")
+    print(f"Received data: {content}")  # Добавляем логирование
+    
+    if content and content not in [d["value"] for d in my_data]:
+        my_data.append({"value": content})
+        log_entry = {
+            "event": f"Получено: {content}",
+            "timestamp": get_current_time(),
+            "node": THIS_NODE
+        }
+        log_data.append(log_entry)
+        print(f"Added log entry: {log_entry}")  # Добавляем логирование
+    return jsonify({"status": "ok"})
+
+# === Отдача текущих данных (для сравнения) ===
+@app.route('/state', methods=['GET'])
+def get_state():
+    return jsonify([d["value"] for d in my_data])
+
+# === Цикл gossip-обмена ===
+def gossip_loop():
+    while True:
+        if not my_data:
+            time.sleep(5)
+            continue
+
+        current_values = set(d["value"] for d in my_data)
+
+        # Проверка: все ли узлы синхронизированы
+        all_same = True
+        for neighbor in NEIGHBORS:
+            if THIS_NODE in neighbor:
+                continue
+            try:
+                resp = requests.get(f"{neighbor}/state", timeout=2)
+                neighbor_values = set(resp.json())
+                if neighbor_values != current_values or not neighbor_values:
+                    all_same = False
+                    break
+            except:
+                all_same = False
+                break
+
+        if all_same:
+            log_data.append({
+                "event": "✅ Все узлы синхронизированы. Gossip остановлен.",
+                "timestamp": get_current_time(),
+                "node": THIS_NODE,
+                "data": list(current_values)
+            })
+            break
+
+        data = random.choice(my_data)["value"]
+        neighbor = random.choice([n for n in NEIGHBORS if THIS_NODE not in n])
+        try:
+            requests.post(f"{neighbor}/data", json={"data": data}, timeout=2)
+            log_data.append({
+                "node": THIS_NODE,
+                "event": f"Отправлено: {data} → {neighbor}",
+                "timestamp": get_current_time()
+            })
+        except Exception as e:
+            log_data.append({
+                "event": f"Ошибка при отправке {data} → {neighbor}: {str(e)}",
+                "timestamp": get_current_time()
+            })
+
+        time.sleep(5)
+
+# === Эндпоинт логов ===
+@app.route('/log', methods=['GET'])
+def get_log():
+    return jsonify(sorted(log_data, key=lambda x: x["timestamp"], reverse=True))
+
+# === Запуск Flask и потока gossip ===
+if __name__ == '__main__':
+    my_data.clear()
+    log_data.clear()
+    log_data.append({
+        "event": "Узел запущен и очищен",
+        "timestamp": get_current_time(),
+        "node": THIS_NODE
+    })
+    Thread(target=gossip_loop, daemon=True).start()
+    app.run(host="0.0.0.0", port=5000)
