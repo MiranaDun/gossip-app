@@ -3,15 +3,18 @@ from datetime import datetime
 import requests
 import os
 import time
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, Response
 from threading import Thread
 import pytz  # Добавляем импорт pytz
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
 
 app = Flask(__name__)
 
 # === Списки вместо MongoDB ===
 my_data = []
 log_data = []
+
+total_message_count = Counter('total_message_count', 'Total number of messages sent by this node')
 
 # === Список соседей ===
 NEIGHBORS = [
@@ -105,6 +108,7 @@ def gossip_loop():
                 "timestamp": get_current_time()
             })
             time.sleep(0.2)
+            total_message_count.inc()
             requests.post(f"{neighbor}/data", json={"data": data}, timeout=2)
         except Exception as e:
             log_data.append({
@@ -119,6 +123,10 @@ def gossip_loop():
 @app.route('/log', methods=['GET'])
 def get_log():
     return jsonify(sorted(log_data, key=lambda x: x["timestamp"], reverse=True))
+
+@app.route('/metrics')
+def metrics():
+    return Response(generate_latest(), mimetype=CONTENT_TYPE_LATEST)
 
 # === Запуск Flask и потока gossip ===
 if __name__ == '__main__':

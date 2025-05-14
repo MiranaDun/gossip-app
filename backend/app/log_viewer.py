@@ -4,6 +4,10 @@ from datetime import datetime
 import os
 import random
 import pytz  # Добавляем импорт pytz
+import re
+from prometheus_api_client import PrometheusConnect
+
+prom = PrometheusConnect(url="http://prometheus:9090", disable_ssl=True)
 
 app = Flask(__name__)
 
@@ -56,34 +60,39 @@ def view_logs():
 
 @app.route('/metrics')
 def get_metrics():
-    # Собираем данные о состоянии всех узлов
     nodes_data = []
     total_messages = 0
-    
+
     for node in NODES:
-        # Получаем текущее состояние узла
         state = get_node_state(node)
-        # Получаем логи узла для анализа связей
         logs = get_node_logs(node)
-        
-        # Подсчитываем количество сообщений
-        total_messages += len(state)
-        
-        # Анализируем логи для определения связей
+
+        # Забираем Prometheus-метрику по имени
+        try:
+            metric_data = prom.get_current_metric_value(
+                metric_name="total_message_count_total",
+                label_config={"instance": f"{node}:5000"}
+            )
+            node_messages = float(metric_data[0]['value'][1]) if metric_data else 0
+        except Exception as e:
+            print(f"Ошибка получения метрики с {node}: {e}")
+            node_messages = 0
+
+        total_messages += node_messages
+
         connections = set()
         for log in logs:
             if "→" in log.get("event", ""):
-                # Извлекаем адрес узла из события
                 target = log["event"].split("→")[1].strip().split("/")[2].split(":")[0]
                 if target in NODES:
                     connections.add(target)
-        
+
         nodes_data.append({
             "id": node,
             "has_message": len(state) > 0,
             "connections": list(connections)
         })
-    
+
     return jsonify({
         "message_count": total_messages,
         "nodes": nodes_data
@@ -118,4 +127,4 @@ def send_message():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001) 
+    app.run(host='0.0.0.0', port=5004) 
