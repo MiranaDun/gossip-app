@@ -3,8 +3,8 @@ version: '3.8'
 services:
   node1:
     build:
-      context: .
-      dockerfile: docker/node.Dockerfile
+      context: ./backend
+      dockerfile: ../docker/node.Dockerfile
     container_name: node1
     environment:
       - THIS_NODE=node1
@@ -13,8 +13,8 @@ services:
 
   node2:
     build:
-      context: .
-      dockerfile: docker/node.Dockerfile
+      context: ./backend
+      dockerfile: ../docker/node.Dockerfile
     container_name: node2
     environment:
       - THIS_NODE=node2
@@ -23,8 +23,8 @@ services:
 
   node3:
     build:
-      context: .
-      dockerfile: docker/node.Dockerfile
+      context: ./backend
+      dockerfile: ../docker/node.Dockerfile
     container_name: node3
     environment:
       - THIS_NODE=node3
@@ -37,7 +37,7 @@ services:
       dockerfile: docker/log-viewer.Dockerfile
     container_name: log-viewer
     volumes:
-      - ./static:/app/static
+      - ./frontend/static:/app/static
     networks:
       - gossipnet
 
@@ -46,7 +46,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./backend/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - node1
       - node2

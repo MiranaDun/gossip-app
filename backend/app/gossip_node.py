@@ -21,16 +21,22 @@ NEIGHBORS = [
 ]
 
 # Имя текущего узла
-THIS_NODE = os.getenv("THIS_NODE", "node2")
+THIS_NODE = os.getenv("THIS_NODE", "node1")
+
+gossip_thread = None
+
+max_size = 0
 
 # Функция для получения текущего времени в нужной временной зоне
 def get_current_time():
     moscow_tz = pytz.timezone('Europe/Moscow')
-    return datetime.now(moscow_tz).strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.now(moscow_tz).strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
 # === Эндпоинт для получения данных ===
 @app.route('/data', methods=['POST'])
 def receive_data():
+    global gossip_thread
+
     content = request.json.get("data")
     print(f"Received data: {content}")  # Добавляем логирование
     
@@ -42,7 +48,10 @@ def receive_data():
             "node": THIS_NODE
         }
         log_data.append(log_entry)
-        print(f"Added log entry: {log_entry}")  # Добавляем логирование
+        time.sleep(0.2)
+        if gossip_thread is None or not gossip_thread.is_alive():
+            gossip_thread = Thread(target=gossip_loop, daemon=True)
+            gossip_thread.start()
     return jsonify({"status": "ok"})
 
 # === Отдача текущих данных (для сравнения) ===
@@ -52,8 +61,11 @@ def get_state():
 
 # === Цикл gossip-обмена ===
 def gossip_loop():
+    global gossip_thread
+    global max_size
+
     while True:
-        if not my_data:
+        if not my_data or len(my_data) == max_size:
             time.sleep(5)
             continue
 
@@ -81,17 +93,19 @@ def gossip_loop():
                 "node": THIS_NODE,
                 "data": list(current_values)
             })
+            max_size = len(my_data)
             break
 
-        data = random.choice(my_data)["value"]
+        data = my_data[-1]["value"]
         neighbor = random.choice([n for n in NEIGHBORS if THIS_NODE not in n])
         try:
-            requests.post(f"{neighbor}/data", json={"data": data}, timeout=2)
             log_data.append({
                 "node": THIS_NODE,
                 "event": f"Отправлено: {data} → {neighbor}",
                 "timestamp": get_current_time()
             })
+            time.sleep(0.2)
+            requests.post(f"{neighbor}/data", json={"data": data}, timeout=2)
         except Exception as e:
             log_data.append({
                 "event": f"Ошибка при отправке {data} → {neighbor}: {str(e)}",
@@ -99,6 +113,7 @@ def gossip_loop():
             })
 
         time.sleep(5)
+    gossip_thread = None 
 
 # === Эндпоинт логов ===
 @app.route('/log', methods=['GET'])
@@ -114,5 +129,6 @@ if __name__ == '__main__':
         "timestamp": get_current_time(),
         "node": THIS_NODE
     })
-    Thread(target=gossip_loop, daemon=True).start()
+    gossip_thread = Thread(target=gossip_loop, daemon=True)
+    gossip_thread.start()
     app.run(host="0.0.0.0", port=5000)
