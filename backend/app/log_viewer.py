@@ -15,6 +15,22 @@ def get_current_time():
     moscow_tz = pytz.timezone('Europe/Moscow')
     return datetime.now(moscow_tz).strftime("%Y-%m-%d %H:%M:%S")
 
+# Функция для получения состояния узла
+def get_node_state(node):
+    try:
+        response = requests.get(f"http://nginx/state/{node}", timeout=1)
+        return response.json()
+    except:
+        return []
+
+# Функция для получения логов узла
+def get_node_logs(node):
+    try:
+        response = requests.get(f"http://nginx/log/{node}", timeout=1)
+        return response.json()
+    except:
+        return []
+
 @app.route('/')
 def view_logs():
     all_logs = []
@@ -37,6 +53,41 @@ def view_logs():
     all_logs.sort(key=lambda x: x["timestamp"], reverse=True)
     
     return render_template('logs.html', logs=all_logs)
+
+@app.route('/metrics')
+def get_metrics():
+    # Собираем данные о состоянии всех узлов
+    nodes_data = []
+    total_messages = 0
+    
+    for node in NODES:
+        # Получаем текущее состояние узла
+        state = get_node_state(node)
+        # Получаем логи узла для анализа связей
+        logs = get_node_logs(node)
+        
+        # Подсчитываем количество сообщений
+        total_messages += len(state)
+        
+        # Анализируем логи для определения связей
+        connections = set()
+        for log in logs:
+            if "→" in log.get("event", ""):
+                # Извлекаем адрес узла из события
+                target = log["event"].split("→")[1].strip().split("/")[2].split(":")[0]
+                if target in NODES:
+                    connections.add(target)
+        
+        nodes_data.append({
+            "id": node,
+            "has_message": len(state) > 0,
+            "connections": list(connections)
+        })
+    
+    return jsonify({
+        "message_count": total_messages,
+        "nodes": nodes_data
+    })
 
 @app.route('/send-message', methods=['POST'])
 def send_message():
