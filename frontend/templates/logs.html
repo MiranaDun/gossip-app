@@ -13,10 +13,6 @@
     <div class="container">
         <div class="header">
             <h1>Gossip Network Visualizer</h1>
-            <div class="controls">
-                <button onclick="hideOldLogs()" class="clear-button">Скрыть старые логи</button>
-                <button onclick="location.reload()" class="refresh-button">Обновить</button>
-            </div>
         </div>
 
         <div class="input-section">
@@ -26,6 +22,8 @@
             </form>
         </div>
 
+        <div id="times-output" style="white-space: pre-wrap; margin-top: 10px; font-family: monospace;"></div>
+
         <div class="main-content">
             <div class="visualization-section">
                 <div id="network-container"></div>
@@ -34,21 +32,6 @@
             <div class="metrics-section">
                 <div class="metrics-container">
                     <canvas id="metricsChart"></canvas>
-                </div>
-            </div>
-
-            <div class="logs-section">
-                <div class="log-container" id="logContainer">
-                    {% for log in logs %}
-                    <div class="log-entry">
-                        <span class="timestamp">{{ log.timestamp }}</span>
-                        <span class="node">[{{ log.node }}]</span>
-                        <span
-                            class="event {% if 'Ошибка' in log.event %}error{% elif '✅' in log.event %}success{% endif %}">
-                            {{ log.event }}
-                        </span>
-                    </div>
-                    {% endfor %}
                 </div>
             </div>
         </div>

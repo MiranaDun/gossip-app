@@ -109,54 +109,6 @@ function startMetricsPolling() {
     setInterval(updateMetrics, 5000);
 }
 
-// Опрос логов каждую секунду
-function startLogsPolling() {
-    updateLogs();
-    setInterval(updateLogs, 1000);
-}
-
-// Обновление логов
-async function updateLogs() {
-    try {
-        const response = await fetch('/');
-        const text = await response.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, 'text/html');
-        const newLogs = doc.querySelectorAll('.log-entry');
-        const logContainer = document.getElementById('logContainer');
-
-        // Проверяем только новые логи
-        newLogs.forEach(log => {
-            const timestamp = log.querySelector('.timestamp').textContent;
-            if (timestamp > lastLogTimestamp) {
-                const clone = log.cloneNode(true);
-                clone.style.opacity = '0';
-                clone.style.transform = 'translateY(-20px)';
-                logContainer.insertBefore(clone, logContainer.firstChild);
-
-                // Анимируем появление нового лога
-                setTimeout(() => {
-                    clone.style.transition = 'all 0.5s ease-out';
-                    clone.style.opacity = '1';
-                    clone.style.transform = 'translateY(0)';
-                }, 50);
-
-                lastLogTimestamp = timestamp;
-            }
-        });
-
-        // Ограничиваем количество отображаемых логов
-        const allLogs = logContainer.querySelectorAll('.log-entry');
-        if (allLogs.length > 50) {
-            for (let i = 50; i < allLogs.length; i++) {
-                allLogs[i].remove();
-            }
-        }
-    } catch (error) {
-        console.error('Error updating logs:', error);
-    }
-}
-
 // Обновление метрик и визуализации сети
 async function updateMetrics() {
     try {
@@ -178,6 +130,21 @@ async function updateMetrics() {
 
         // Обновляем визуализацию сети
         updateNetwork(data.nodes);
+
+        const timesDiv = document.getElementById('times-output');
+        if (timesDiv && data.start_times && data.end_times) {
+            let text = 'Время передачи сообщения по узлам:\n';
+            for (const nodeId in data.start_times) {
+                if (data.end_times[nodeId] !== 0) {
+                    const durationMs = data.end_times[nodeId] - data.start_times[nodeId];
+                    const durationSec = (durationMs / 1000).toFixed(3);
+                    text += `${nodeId}: ${durationSec} sec\n`;
+                } else {
+                    text += `${nodeId}: no end_time\n`;
+                }
+            }
+            timesDiv.textContent = text;
+        }
     } catch (error) {
         console.error('Error fetching metrics:', error);
     }
@@ -265,7 +232,6 @@ async function sendMessage(event) {
 
             // Принудительно обновляем метрики и логи после отправки сообщения
             updateMetrics();
-            updateLogs();
         } else {
             const data = await response.json();
             showError(data.error || 'Ошибка при отправке сообщения');
@@ -274,80 +240,6 @@ async function sendMessage(event) {
         console.error('Error:', error);
         showError('Ошибка при отправке сообщения: ' + error);
     }
-}
-
-// Функция для скрытия старых логов
-function hideOldLogs() {
-    const logContainer = document.getElementById('logContainer');
-    const logEntries = logContainer.getElementsByClassName('log-entry');
-    const now = new Date();
-
-    // Скрываем логи старше 5 минут
-    Array.from(logEntries).forEach(entry => {
-        const timestamp = entry.querySelector('.timestamp').textContent;
-        const logTime = new Date(timestamp);
-        const diffMinutes = (now - logTime) / (1000 * 60);
-
-        if (diffMinutes > 5) {
-            entry.style.transition = 'all 0.5s ease-out';
-            entry.style.opacity = '0';
-            entry.style.transform = 'translateY(20px)';
-            setTimeout(() => entry.style.display = 'none', 500);
-        }
-    });
-
-    // Показываем сообщение о скрытых логах
-    const message = document.createElement('div');
-    message.className = 'info-message';
-    message.textContent = 'Старые логи скрыты. Нажмите "Обновить" чтобы увидеть все логи.';
-    message.style.opacity = '0';
-    logContainer.insertBefore(message, logContainer.firstChild);
-
-    // Анимируем появление сообщения
-    setTimeout(() => {
-        message.style.transition = 'opacity 0.5s ease-out';
-        message.style.opacity = '1';
-    }, 50);
-
-    // Меняем текст кнопки
-    const clearButton = document.querySelector('.clear-button');
-    clearButton.textContent = 'Показать все логи';
-    clearButton.onclick = showAllLogs;
-}
-
-// Функция для показа всех логов
-function showAllLogs() {
-    const logContainer = document.getElementById('logContainer');
-    const logEntries = logContainer.getElementsByClassName('log-entry');
-
-    // Показываем все скрытые логи с анимацией
-    Array.from(logEntries).forEach((entry, index) => {
-        if (entry.style.display === 'none') {
-            entry.style.display = '';
-            entry.style.opacity = '0';
-            entry.style.transform = 'translateY(20px)';
-
-            setTimeout(() => {
-                entry.style.transition = 'all 0.5s ease-out';
-                entry.style.opacity = '1';
-                entry.style.transform = 'translateY(0)';
-            }, index * 50);
-        }
-    });
-
-    // Удаляем информационное сообщение с анимацией
-    const infoMessage = logContainer.querySelector('.info-message');
-    if (infoMessage) {
-        infoMessage.style.transition = 'all 0.5s ease-out';
-        infoMessage.style.opacity = '0';
-        infoMessage.style.transform = 'translateY(-20px)';
-        setTimeout(() => infoMessage.remove(), 500);
-    }
-
-    // Возвращаем текст кнопки
-    const clearButton = document.querySelector('.clear-button');
-    clearButton.textContent = 'Скрыть старые логи';
-    clearButton.onclick = hideOldLogs;
 }
 
 // Функция для отображения ошибок
