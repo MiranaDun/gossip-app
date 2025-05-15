@@ -81,6 +81,8 @@ services:
       - node1
       - node2
       - node3
+      - node4
+      - node5
       - log-viewer
     networks:
       - gossipnet
@@ -96,6 +98,8 @@ services:
       - node1
       - node2
       - node3
+      - node4
+      - node5
     networks:
       - gossipnet
 

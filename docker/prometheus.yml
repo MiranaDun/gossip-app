@@ -4,4 +4,4 @@ global:
 scrape_configs:
   - job_name: 'gossip_nodes'
     static_configs:
-      - targets: ['node1:5000', 'node2:5000', 'node3:5000']
+      - targets: ['node1:5000', 'node2:5000', 'node3:5000', 'node4:5000', 'node5:5000']
