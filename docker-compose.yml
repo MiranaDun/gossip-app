@@ -37,6 +37,30 @@ services:
     networks:
       - gossipnet
 
+  node4:
+    build:
+      context: ./backend
+      dockerfile: ../docker/node.Dockerfile
+    container_name: node4
+    environment:
+      - THIS_NODE=node4
+    ports:
+      - "5004:5000"
+    networks:
+      - gossipnet
+
+  node5:
+    build:
+      context: ./backend
+      dockerfile: ../docker/node.Dockerfile
+    container_name: node5
+    environment:
+      - THIS_NODE=node5
+    ports:
+      - "5005:5000"
+    networks:
+      - gossipnet
+
   log-viewer:
     build:
       context: .

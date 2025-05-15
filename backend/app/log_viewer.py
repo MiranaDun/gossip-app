@@ -1,10 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import requests
 from datetime import datetime
-import os
-import random
 import pytz  # Добавляем импорт pytz
-import re
 from prometheus_api_client import PrometheusConnect
 
 prom = PrometheusConnect(url="http://prometheus:9090", disable_ssl=True)
@@ -37,37 +34,20 @@ def get_node_logs(node):
 
 @app.route('/')
 def view_logs():
-    all_logs = []
     
-    # Собираем логи со всех узлов через nginx
-    for node in NODES:
-        try:
-            response = requests.get(f"http://nginx/log/{node}")
-            node_logs = response.json()
-            all_logs.extend(node_logs)
-        except Exception as e:
-            print(f"Error getting logs from {node}: {str(e)}")
-            all_logs.append({
-                "event": f"Ошибка получения логов с {node}: {str(e)}",
-                "timestamp": get_current_time(),
-                "node": node
-            })
-    
-    # Сортируем все логи по времени в обратном порядке (от новых к старым)
-    all_logs.sort(key=lambda x: x["timestamp"], reverse=True)
-    
-    return render_template('logs.html', logs=all_logs)
+    return render_template('logs.html')
 
 @app.route('/metrics')
 def get_metrics():
     nodes_data = []
     total_messages = 0
+    start_times = {}
+    end_times = {}
 
     for node in NODES:
         state = get_node_state(node)
         logs = get_node_logs(node)
 
-        # Забираем Prometheus-метрику по имени
         try:
             metric_data = prom.get_current_metric_value(
                 metric_name="total_message_count_total",
@@ -79,6 +59,29 @@ def get_metrics():
             node_messages = 0
 
         total_messages += node_messages
+
+        try:
+            end_time_data = prom.get_current_metric_value(
+                metric_name="end_time",
+                label_config={"instance": f"{node}:5000", "node": node}
+            )
+            end_time_value = float(end_time_data[0]['value'][1]) if end_time_data else 0
+        except Exception as e:
+            print(f"Ошибка получения метрики end_time с {node}: {e}")
+            end_time_value = 0
+
+        try:
+            start_time_data = prom.get_current_metric_value(
+                metric_name="start_time",
+                label_config={"instance": f"{node}:5000", "node": node}
+            )
+            start_time_value = float(start_time_data[0]['value'][1]) if start_time_data else 0
+        except Exception as e:
+            print(f"Ошибка получения метрики start_time с {node}: {e}")
+            start_time_value = 0
+
+        start_times[node] = start_time_value
+        end_times[node] = end_time_value
 
         connections = set()
         for log in logs:
@@ -95,7 +98,9 @@ def get_metrics():
 
     return jsonify({
         "message_count": total_messages,
-        "nodes": nodes_data
+        "nodes": nodes_data,
+        "start_times": start_times,
+        "end_times": end_times
     })
 
 @app.route('/send-message', methods=['POST'])
@@ -127,4 +132,4 @@ def send_message():
         return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5004) 
+    app.run(host='0.0.0.0', port=5006) 
