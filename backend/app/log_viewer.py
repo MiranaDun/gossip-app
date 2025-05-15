@@ -9,7 +9,7 @@ prom = PrometheusConnect(url="http://prometheus:9090", disable_ssl=True)
 app = Flask(__name__)
 
 # Список всех узлов
-NODES = ["node1", "node2", "node3"]
+NODES = ["node1", "node2", "node3", "node4", "node5"]
 
 # Функция для получения текущего времени в нужной временной зоне
 def get_current_time():

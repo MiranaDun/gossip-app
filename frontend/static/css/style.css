@@ -18,7 +18,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1400px;
     margin: 0 auto;
     padding: 20px;
 }
@@ -110,33 +110,74 @@ body {
     background-color: var(--primary-dark);
 }
 
-.log-container {
+.main-content {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: auto auto auto;
+    gap: 20px;
+}
+
+.visualization-section {
+    grid-column: 1 / -1;
     background-color: white;
     border-radius: var(--border-radius);
     box-shadow: var(--box-shadow);
-    overflow: hidden;
-    max-height: 600px;
+    padding: 20px;
+    height: 400px;
+}
+
+#network-container {
+    width: 100%;
+    height: 100%;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+}
+
+.metrics-section {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    height: 300px;
+}
+
+.metrics-container {
+    width: 100%;
+    height: 100%;
+}
+
+.time-section {
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    height: 300px;
+}
+
+.time-container {
+    width: 100%;
+    height: 100%;
+}
+
+.logs-section {
+    grid-column: 1 / -1;
+    background-color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    padding: 20px;
+    height: 300px;
+}
+
+.log-container {
+    height: 100%;
     overflow-y: auto;
     padding: 10px;
 }
 
 .log-entry {
-    padding: 15px;
+    padding: 10px;
     border-bottom: 1px solid #eee;
     transition: all 0.3s ease;
-    animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .log-entry:hover {
@@ -190,50 +231,16 @@ body {
     text-align: center;
 }
 
-.main-content {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto auto;
-    gap: 20px;
-    margin-top: 20px;
-}
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
 
-.visualization-section {
-    grid-column: 1 / -1;
-    background-color: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    padding: 20px;
-    height: 400px;
-}
-
-#network-container {
-    width: 100%;
-    height: 100%;
-    border: 1px solid #ddd;
-    border-radius: var(--border-radius);
-}
-
-.metrics-section {
-    background-color: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    padding: 20px;
-    height: 300px;
-}
-
-.metrics-container {
-    width: 100%;
-    height: 100%;
-}
-
-.logs-section {
-    background-color: white;
-    border-radius: var(--border-radius);
-    box-shadow: var(--box-shadow);
-    padding: 20px;
-    height: 300px;
-    overflow: hidden;
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 @media (max-width: 768px) {
@@ -249,20 +256,13 @@ body {
         width: 100%;
     }
 
-    .controls {
-        flex-direction: column;
-    }
-
-    .controls button {
-        width: 100%;
-    }
-
     .main-content {
         grid-template-columns: 1fr;
     }
 
     .visualization-section,
     .metrics-section,
+    .time-section,
     .logs-section {
         height: 300px;
     }

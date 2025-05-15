@@ -13,12 +13,15 @@
     <div class="container">
         <div class="header">
             <h1>Gossip Network Visualizer</h1>
+            <div class="controls">
+                <button onclick="location.reload()" class="refresh-button">Refresh</button>
+            </div>
         </div>
 
         <div class="input-section">
             <form class="input-form" onsubmit="sendMessage(event)">
-                <input type="text" id="message" placeholder="Введите сообщение для отправки" required>
-                <button type="submit">Отправить</button>
+                <input type="text" id="message" placeholder="Enter message to send" required>
+                <button type="submit">Send</button>
             </form>
         </div>
 
@@ -32,6 +35,27 @@
             <div class="metrics-section">
                 <div class="metrics-container">
                     <canvas id="metricsChart"></canvas>
+                </div>
+            </div>
+
+            <div class="time-section">
+                <div class="time-container">
+                    <canvas id="timeHistogram"></canvas>
+                </div>
+            </div>
+
+            <div class="logs-section">
+                <div class="log-container" id="logContainer">
+                    {% for log in logs %}
+                    <div class="log-entry">
+                        <span class="timestamp">{{ log.timestamp }}</span>
+                        <span class="node">[{{ log.node }}]</span>
+                        <span
+                            class="event {% if 'Error' in log.event %}error{% elif '✅' in log.event %}success{% endif %}">
+                            {{ log.event }}
+                        </span>
+                    </div>
+                    {% endfor %}
                 </div>
             </div>
         </div>

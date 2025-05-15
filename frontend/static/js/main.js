@@ -1,21 +1,24 @@
 // Глобальные переменные для сети и графика
 let network = null;
 let metricsChart = null;
-let lastLogTimestamp = '';
+let timeHistogram = null;
+let lastMessageTimestamp = 0;
 
 // Фиксированные позиции для узлов
 const nodePositions = {
-    'node1': { x: -200, y: 0 },
-    'node2': { x: 0, y: -100 },
-    'node3': { x: 200, y: 0 }
+    'node1': { x: -200, y: -150 },
+    'node2': { x: 200, y: -150 },
+    'node3': { x: 250, y: 100 },
+    'node4': { x: -250, y: 100 },
+    'node5': { x: 0, y: 200 }
 };
 
 // Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function () {
     initNetwork();
     initMetricsChart();
+    initTimeHistogram();
     startMetricsPolling();
-    startLogsPolling();
 });
 
 // Инициализация визуализации сети
@@ -26,7 +29,9 @@ function initNetwork() {
     const nodes = new vis.DataSet([
         { id: 'node1', label: 'Node 1', fixed: true, physics: false, ...nodePositions['node1'] },
         { id: 'node2', label: 'Node 2', fixed: true, physics: false, ...nodePositions['node2'] },
-        { id: 'node3', label: 'Node 3', fixed: true, physics: false, ...nodePositions['node3'] }
+        { id: 'node3', label: 'Node 3', fixed: true, physics: false, ...nodePositions['node3'] },
+        { id: 'node4', label: 'Node 4', fixed: true, physics: false, ...nodePositions['node4'] },
+        { id: 'node5', label: 'Node 5', fixed: true, physics: false, ...nodePositions['node5'] }
     ]);
 
     const edges = new vis.DataSet([]);
@@ -57,7 +62,11 @@ function initNetwork() {
             },
             shadow: true
         },
-        physics: false
+        physics: false,
+        interaction: {
+            zoomView: false,
+            dragView: false
+        }
     };
 
     network = new vis.Network(container, data, options);
@@ -71,7 +80,7 @@ function initMetricsChart() {
         data: {
             labels: [],
             datasets: [{
-                label: 'Количество сообщений',
+                label: 'Message Count',
                 data: [],
                 borderColor: 'rgb(75, 192, 192)',
                 tension: 0.4,
@@ -103,6 +112,42 @@ function initMetricsChart() {
     });
 }
 
+function initTimeHistogram() {
+    const ctx = document.getElementById('timeHistogram').getContext('2d');
+    timeHistogram = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Message Propagation Time (sec)',
+                data: [],
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgb(54, 162, 235)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Time (seconds)'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Nodes'
+                    }
+                }
+            }
+        }
+    });
+}
+
 // Опрос метрик каждые 5 секунд
 function startMetricsPolling() {
     updateMetrics();
@@ -115,36 +160,27 @@ async function updateMetrics() {
         const response = await fetch('/metrics');
         const data = await response.json();
 
-        // Обновляем график
         const timestamp = new Date().toLocaleTimeString();
+
+        if (data.message_count === 0) {
+            lastMessageTimestamp = 0;
+        } else if (lastMessageTimestamp === 0) {
+            lastMessageTimestamp = Date.now();
+            metricsChart.data.datasets[0].data = [];
+            metricsChart.data.labels = [];
+        }
+
         metricsChart.data.labels.push(timestamp);
         metricsChart.data.datasets[0].data.push(data.message_count);
 
-        // Ограничиваем количество точек на графике
         if (metricsChart.data.labels.length > 20) {
             metricsChart.data.labels.shift();
             metricsChart.data.datasets[0].data.shift();
         }
 
         metricsChart.update('active');
-
-        // Обновляем визуализацию сети
         updateNetwork(data.nodes);
-
-        const timesDiv = document.getElementById('times-output');
-        if (timesDiv && data.start_times && data.end_times) {
-            let text = 'Время передачи сообщения по узлам:\n';
-            for (const nodeId in data.start_times) {
-                if (data.end_times[nodeId] !== 0) {
-                    const durationMs = data.end_times[nodeId] - data.start_times[nodeId];
-                    const durationSec = (durationMs / 1000).toFixed(3);
-                    text += `${nodeId}: ${durationSec} sec\n`;
-                } else {
-                    text += `${nodeId}: no end_time\n`;
-                }
-            }
-            timesDiv.textContent = text;
-        }
+        updateTimeHistogram(data.start_times, data.end_times);
     } catch (error) {
         console.error('Error fetching metrics:', error);
     }
@@ -205,6 +241,33 @@ function updateNetwork(nodes) {
     });
 }
 
+function updateTimeHistogram(startTimes, endTimes) {
+    if (!startTimes || !endTimes) return;
+
+    const labels = [];
+    const data = [];
+
+    // Обрабатываем все узлы в правильном порядке
+    for (let i = 1; i <= 5; i++) {
+        const nodeId = `node${i}`;
+        labels.push(nodeId);
+
+        if (startTimes[nodeId] && endTimes[nodeId] !== 0) {
+            const durationMs = endTimes[nodeId] - startTimes[nodeId];
+            const durationSec = (durationMs / 1000).toFixed(3);
+            data.push(parseFloat(durationSec));
+        } else {
+            // Если узел еще не получил сообщение или не завершил обработку,
+            // показываем нулевое время
+            data.push(0);
+        }
+    }
+
+    timeHistogram.data.labels = labels;
+    timeHistogram.data.datasets[0].data = data;
+    timeHistogram.update();
+}
+
 // Функция для отправки сообщения
 async function sendMessage(event) {
     event.preventDefault();
@@ -225,20 +288,20 @@ async function sendMessage(event) {
         if (response.ok) {
             messageInput.value = '';
             const button = document.querySelector('.input-form button');
-            button.textContent = 'Отправлено!';
+            button.textContent = 'Sent!';
             setTimeout(() => {
-                button.textContent = 'Отправить';
+                button.textContent = 'Send';
             }, 2000);
 
             // Принудительно обновляем метрики и логи после отправки сообщения
             updateMetrics();
         } else {
             const data = await response.json();
-            showError(data.error || 'Ошибка при отправке сообщения');
+            showError(data.error || 'Message sending error');
         }
     } catch (error) {
         console.error('Error:', error);
-        showError('Ошибка при отправке сообщения: ' + error);
+        showError('Message sending error: ' + error);
     }
 }
 
