@@ -1,10 +1,8 @@
-// Глобальные переменные для сети и графика
 let network = null;
 let metricsChart = null;
 let timeHistogram = null;
 let lastMessageTimestamp = 0;
 
-// Фиксированные позиции для узлов
 const nodePositions = {
     'node1': { x: -200, y: -150 },
     'node2': { x: 200, y: -150 },
@@ -13,7 +11,6 @@ const nodePositions = {
     'node5': { x: 0, y: 200 }
 };
 
-// Инициализация при загрузке страницы
 document.addEventListener('DOMContentLoaded', function () {
     initNetwork();
     initMetricsChart();
@@ -21,11 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
     startMetricsPolling();
 });
 
-// Инициализация визуализации сети
 function initNetwork() {
     const container = document.getElementById('network-container');
 
-    // Создаем начальные узлы с фиксированными позициями
     const nodes = new vis.DataSet([
         { id: 'node1', label: 'Node 1', fixed: true, physics: false, ...nodePositions['node1'] },
         { id: 'node2', label: 'Node 2', fixed: true, physics: false, ...nodePositions['node2'] },
@@ -308,9 +303,6 @@ async function sendMessage(event) {
     if (!message) return;
 
     try {
-        // Сбрасываем визуализации перед отправкой нового сообщения
-        resetVisualizations();
-
         const response = await fetch('/send-message', {
             method: 'POST',
             headers: {
@@ -327,10 +319,18 @@ async function sendMessage(event) {
                 button.textContent = 'Send';
             }, 2000);
 
-            // Сбрасываем lastMessageTimestamp для нового отсчета
+            // Полностью пересоздаем все визуализации
+            if (network) network.destroy();
+            if (metricsChart) metricsChart.destroy();
+            if (timeHistogram) timeHistogram.destroy();
+
+            // Заново инициализируем все
+            initNetwork();
+            initMetricsChart();
+            initTimeHistogram();
             lastMessageTimestamp = 0;
 
-            // Принудительно обновляем метрики и логи после отправки сообщения
+            // Запускаем обновление
             updateMetrics();
         } else {
             const data = await response.json();
