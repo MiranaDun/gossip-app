@@ -148,10 +148,10 @@ function initTimeHistogram() {
     });
 }
 
-// Опрос метрик каждые 5 секунд
+// Опрос метрик каждые 1 секунд
 function startMetricsPolling() {
     updateMetrics();
-    setInterval(updateMetrics, 5000);
+    setInterval(updateMetrics, 1000);
 }
 
 // Обновление метрик и визуализации сети
@@ -268,6 +268,37 @@ function updateTimeHistogram(startTimes, endTimes) {
     timeHistogram.update();
 }
 
+// Функция для сброса всех визуализаций
+function resetVisualizations() {
+    // Сброс графика сообщений
+    metricsChart.data.labels = [];
+    metricsChart.data.datasets[0].data = [];
+    metricsChart.update();
+
+    // Сброс гистограммы времени
+    timeHistogram.data.labels = [];
+    timeHistogram.data.datasets[0].data = [];
+    timeHistogram.update();
+
+    // Сброс сети (удаление всех связей и сброс цветов узлов)
+    const networkData = network.body.data;
+    networkData.edges.clear();
+    const nodes = networkData.nodes.get();
+    nodes.forEach(node => {
+        networkData.nodes.update({
+            id: node.id,
+            color: {
+                background: '#2196F3',
+                border: '#1976D2',
+                highlight: {
+                    background: '#64B5F6',
+                    border: '#1976D2'
+                }
+            }
+        });
+    });
+}
+
 // Функция для отправки сообщения
 async function sendMessage(event) {
     event.preventDefault();
@@ -277,6 +308,9 @@ async function sendMessage(event) {
     if (!message) return;
 
     try {
+        // Сбрасываем визуализации перед отправкой нового сообщения
+        resetVisualizations();
+
         const response = await fetch('/send-message', {
             method: 'POST',
             headers: {
@@ -292,6 +326,9 @@ async function sendMessage(event) {
             setTimeout(() => {
                 button.textContent = 'Send';
             }, 2000);
+
+            // Сбрасываем lastMessageTimestamp для нового отсчета
+            lastMessageTimestamp = 0;
 
             // Принудительно обновляем метрики и логи после отправки сообщения
             updateMetrics();
