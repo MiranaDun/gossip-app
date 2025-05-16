@@ -232,24 +232,21 @@ function updateNetwork(nodes) {
 function updateTimeHistogram(startTimes, endTimes) {
     if (!startTimes || !endTimes) return;
 
-    const labels = [];
-    const data = [];
+    timeHistogram.data.labels = [];
+    timeHistogram.data.datasets[0].data = [];
 
     for (let i = 1; i <= 5; i++) {
         const nodeId = `node${i}`;
-        labels.push(nodeId);
+        timeHistogram.data.labels.push(nodeId);
 
-        if (startTimes[nodeId] && endTimes[nodeId] !== 0) {
-            const durationMs = endTimes[nodeId] - startTimes[nodeId];
-            const durationSec = (durationMs / 1000).toFixed(3);
-            data.push(parseFloat(durationSec));
+        if (startTimes[nodeId] && endTimes[nodeId]) {
+            let durationSec = endTimes[nodeId] - startTimes[nodeId];
+            if (durationSec < 1) durationSec = 1;
+            timeHistogram.data.datasets[0].data.push(parseFloat(durationSec.toFixed(3)));
         } else {
-            data.push(0);
+            timeHistogram.data.datasets[0].data.push(0);
         }
     }
-
-    timeHistogram.data.labels = labels;
-    timeHistogram.data.datasets[0].data = data;
     timeHistogram.update();
 }
 
