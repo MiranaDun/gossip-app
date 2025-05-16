@@ -43,21 +43,6 @@
                     <canvas id="timeHistogram"></canvas>
                 </div>
             </div>
-
-            <!-- <div class="logs-section">
-                <div class="log-container" id="logContainer">
-                    {% for log in logs %}
-                    <div class="log-entry">
-                        <span class="timestamp">{{ log.timestamp }}</span>
-                        <span class="node">[{{ log.node }}]</span>
-                        <span
-                            class="event {% if 'Error' in log.event %}error{% elif '✅' in log.event %}success{% endif %}">
-                            {{ log.event }}
-                        </span>
-                    </div>
-                    {% endfor %}
-                </div>
-            </div> -->
         </div>
     </div>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>

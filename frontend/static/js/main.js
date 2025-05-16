@@ -67,7 +67,6 @@ function initNetwork() {
     network = new vis.Network(container, data, options);
 }
 
-// Инициализация графика метрик
 function initMetricsChart() {
     const ctx = document.getElementById('metricsChart').getContext('2d');
     metricsChart = new Chart(ctx, {
@@ -143,13 +142,11 @@ function initTimeHistogram() {
     });
 }
 
-// Опрос метрик каждые 1 секунд
 function startMetricsPolling() {
     updateMetrics();
     setInterval(updateMetrics, 1000);
 }
 
-// Обновление метрик и визуализации сети
 async function updateMetrics() {
     try {
         const response = await fetch('/metrics');
@@ -181,11 +178,9 @@ async function updateMetrics() {
     }
 }
 
-// Обновление визуализации сети
 function updateNetwork(nodes) {
     const networkData = network.body.data;
 
-    // Обновляем цвета узлов
     nodes.forEach(node => {
         networkData.nodes.update({
             id: node.id,
@@ -200,7 +195,6 @@ function updateNetwork(nodes) {
         });
     });
 
-    // Обновляем связи между узлами
     const currentEdges = new Set(networkData.edges.getIds());
 
     nodes.forEach(node => {
@@ -220,7 +214,6 @@ function updateNetwork(nodes) {
                     }
                 });
 
-                // Анимируем появление связи
                 setTimeout(() => {
                     networkData.edges.update({
                         id: edgeId,
@@ -242,7 +235,6 @@ function updateTimeHistogram(startTimes, endTimes) {
     const labels = [];
     const data = [];
 
-    // Обрабатываем все узлы в правильном порядке
     for (let i = 1; i <= 5; i++) {
         const nodeId = `node${i}`;
         labels.push(nodeId);
@@ -252,8 +244,6 @@ function updateTimeHistogram(startTimes, endTimes) {
             const durationSec = (durationMs / 1000).toFixed(3);
             data.push(parseFloat(durationSec));
         } else {
-            // Если узел еще не получил сообщение или не завершил обработку,
-            // показываем нулевое время
             data.push(0);
         }
     }
@@ -263,38 +253,6 @@ function updateTimeHistogram(startTimes, endTimes) {
     timeHistogram.update();
 }
 
-// Функция для сброса всех визуализаций
-function resetVisualizations() {
-    // Сброс графика сообщений
-    metricsChart.data.labels = [];
-    metricsChart.data.datasets[0].data = [];
-    metricsChart.update();
-
-    // Сброс гистограммы времени
-    timeHistogram.data.labels = [];
-    timeHistogram.data.datasets[0].data = [];
-    timeHistogram.update();
-
-    // Сброс сети (удаление всех связей и сброс цветов узлов)
-    const networkData = network.body.data;
-    networkData.edges.clear();
-    const nodes = networkData.nodes.get();
-    nodes.forEach(node => {
-        networkData.nodes.update({
-            id: node.id,
-            color: {
-                background: '#2196F3',
-                border: '#1976D2',
-                highlight: {
-                    background: '#64B5F6',
-                    border: '#1976D2'
-                }
-            }
-        });
-    });
-}
-
-// Функция для отправки сообщения
 async function sendMessage(event) {
     event.preventDefault();
     const messageInput = document.getElementById('message');
@@ -319,18 +277,6 @@ async function sendMessage(event) {
                 button.textContent = 'Send';
             }, 2000);
 
-            // Полностью пересоздаем все визуализации
-            if (network) network.destroy();
-            if (metricsChart) metricsChart.destroy();
-            if (timeHistogram) timeHistogram.destroy();
-
-            // Заново инициализируем все
-            initNetwork();
-            initMetricsChart();
-            initTimeHistogram();
-            lastMessageTimestamp = 0;
-
-            // Запускаем обновление
             updateMetrics();
         } else {
             const data = await response.json();
@@ -342,7 +288,6 @@ async function sendMessage(event) {
     }
 }
 
-// Функция для отображения ошибок
 function showError(message) {
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
@@ -350,13 +295,11 @@ function showError(message) {
     errorDiv.style.opacity = '0';
     document.querySelector('.input-section').appendChild(errorDiv);
 
-    // Анимируем появление ошибки
     setTimeout(() => {
         errorDiv.style.transition = 'all 0.5s ease-out';
         errorDiv.style.opacity = '1';
     }, 50);
 
-    // Анимируем исчезновение ошибки
     setTimeout(() => {
         errorDiv.style.opacity = '0';
         errorDiv.style.transform = 'translateY(-20px)';
