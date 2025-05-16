@@ -84,7 +84,7 @@ def gossip_loop():
             end_time.labels(node=THIS_NODE).set(time.time())
             max_size = len(my_data)
             break
-        data = my_data[-1]["value"]
+        data = random.choice(my_data)["value"]
         neighbor = random.choice([n for n in NEIGHBORS if THIS_NODE not in n])
         try:
             log_data.append({
@@ -101,7 +101,7 @@ def gossip_loop():
                 "timestamp": get_current_time()
             })
         time.sleep(5)
-    gossip_thread = None 
+    gossip_thread = None
 
 @app.route('/log', methods=['GET'])
 def get_log():
