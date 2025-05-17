@@ -85,7 +85,6 @@ docker-compose up
 
 3. Access the application:
 - Web interface: http://localhost:80
-- Prometheus: http://localhost:9090
 
 ### Usage
 
@@ -99,12 +98,17 @@ docker-compose up
 
 ```
 .
+├── .github/
+│   ├── workflows/
+│   │   └── ci-cd.yml
 ├── backend/
 │   ├── app/
 │   │   ├── gossip_node.py
 │   │   └── log_viewer.py
 │   └── nginx/
 │       └── nginx.conf
+├── demo/
+│   └── demo.mp4
 ├── frontend/
 │   ├── static/
 │   │   ├── css/
@@ -114,6 +118,10 @@ docker-compose up
 │   ├── node.Dockerfile
 │   ├── log-viewer.Dockerfile
 │   └── prometheus.yml
+├── report/
+│   ├── report.tex
+│   ├── report.pdf
+│   └── figures/
 └── docker-compose.yml
 ```
 
