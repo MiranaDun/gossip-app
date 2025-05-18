@@ -1,4 +1,4 @@
-# Gossip Protocol Network Visualizer
+# Simplified Gossip Protocol Visualizer
 
 A distributed system that implements the gossip protocol with real-time visualization of message propagation across a network of nodes.
 
