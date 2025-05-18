@@ -1,0 +1,220 @@
+\documentclass[a4paper,12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[russian,english]{babel}
+\usepackage[breaklinks=true]{hyperref}
+\usepackage{url}
+\usepackage{geometry}
+\geometry{top=2cm, bottom=2cm, left=2.5cm, right=2.5cm}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{float} 
+\usepackage{listings}
+\usepackage{verbatim}
+\usepackage{fvextra}
+
+\titleformat{\section}{\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{\thesubsection}{1em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{Simplified Gossip Protocol Visualizer}
+\fancyhead[R]{Project Report}
+\fancyfoot[C]{\thepage}
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+    {\Large \textbf{Simplified Gossip Protocol Visualizer}}\\[1cm]
+    \textbf{Project Report}\\[0.5cm]
+    \vfill
+    \textbf{Student Names: Arina Zimina, Karina Siniatullina,} \\[0.3cm]
+    \textbf{Egor Agapov} \\[0.5cm]
+    \textbf{Date: 17.05.2025} \\[2cm]
+    \vfill
+\end{titlepage}
+
+\section{Introduction}
+
+The \textbf{Gossip protocol} is a protocol that allows designing highly efficient, secure and low latency distributed communication systems (P2P). The inspiration for its design has been taken from studies on epidemic expansion and algorithms resulting from it. \\\\
+The gossip protocol is very important in distributed systems because it helps \textbf{nodes} (computers, servers, or processes) \textbf{share information quickly}, \textbf{reliably}, and \textbf{without a central coordinator}. Here's why it's critical:
+\begin{itemize}
+    \item \textbf{Scalability:} Gossip scales really well — even with thousands of nodes — because each node only talks to a few others at a time.
+    \item \textbf{Fault tolerance:} Nodes can fail or go offline, but gossip ensures the system can still spread information without depending on any single point.
+    \item \textbf{Eventually consistent:} Perfect synchronization is hard in distributed systems, so gossip allows nodes to eventually reach the same state without requiring immediate consistency.
+    \item \textbf{Low overhead:} The communication is lightweight and randomized, so it doesn't overload the network.
+\end{itemize}
+
+\textbf{A few important use cases for gossip protocols:}
+\begin{enumerate}
+    \item \textbf{Membership tracking:} Nodes use gossip to find out which other nodes are alive, dead, or new in the system (example: Amazon DynamoDB).
+    \item \textbf{State dissemination:} Systems like Apache Cassandra use gossip to spread metadata (like schema changes, load info) across all nodes.
+    \item \textbf{Failure detection:} If a node crashes, gossip helps quickly alert the rest of the system so they can reroute traffic or rebalance data.
+    \item \textbf{Blockchain and cryptocurrency networks:} In Bitcoin, Ethereum, and other decentralized networks, gossip spreads new transactions and blocks across peers.
+\end{enumerate}
+
+\section{Goal}
+
+The main goal of this project was to build a visualizer for a simplified gossip protocol to demonstrate how information spreads across nodes in a distributed system. The system simulates message dissemination, convergence detection, and metric monitoring in real time.\\\\
+\textbf{Responsibilities:}
+\begin{itemize}
+    \item \textbf{Arina Zimina:} Python backend development using Flask for API creation and HTTP requests processing, gossip protocol implementation using threading for asynchronous message processing, Docker and Docker Compose setup and configuration for containerization and orchestration of services, Prometheus integration for collecting and storing metrics about the system performance.
+    \item \textbf{Karina Siniatullina:} Interface design and styling via HTML and CSS, dynamic updating and handling of events and animations in JavaScript, display of nodes and links between them, as well as animation of message propagation over the network via Vis-network library, plotting of graphs and charts via Chart.js library
+    \item \textbf{Egor Agapov:} Creating a CI/CD pipeline in GitHub Actions using YAML configuration to run the test, and writing a project report.
+\end{itemize}
+
+\section{Methodology}
+
+The project follows a microservice-based approach, with each gossip node implemented as an independent service.\\\\
+\textbf{System Architecture:}
+\begin{itemize}
+    \item \textbf{Gossip Nodes:} Independent \verb|Flask| servers communicating via gossip protocol.
+    \item \textbf{Nginx:} Acts as a load balancer (round-robin) and routes client messages to one of the nodes.
+    \item \textbf{Prometheus:} Collects metrics from nodes for graphing.
+    \item \textbf{Frontend:} \verb|HTML/JS| interface using \verb|Vis-network| and \verb|Chart.js| to visualize the gossip state and convergence.
+\end{itemize}
+\textbf{Infrastructure Stack:}
+\begin{itemize}
+    \item \textbf{Backend:} \verb|Python 3|, \verb|Flask|, \verb|Prometheus| client, threading
+    \item \textbf{Frontend:} \verb|HTML/CSS|, \verb|JavaScript|, \verb|Chart.js|, \verb|Vis-network|
+    \item \textbf{Infrastructure:} \verb|Nginx|, \verb|Prometheus|, \verb|Docker|
+\end{itemize}
+\textbf{Planned Flow:}
+\begin{enumerate}
+    \item Client sends a message via the UI.
+    \item \verb|Nginx| forwards it to a random gossip node.
+    \item The node starts spreading the message using gossip algorithm.
+    \item Each node synchronizes with neighbors until convergence.
+    \item \verb|Prometheus| periodically asks for metrics from nodes for dynamic graphing.
+\end{enumerate}
+
+\section{Development of solution}
+
+\subsection*{Gossip Node (\texttt{gossip\_node.py})}
+\begin{itemize}
+    \item Receives messages via \verb|/data POST| endpoint.
+    \item Periodically gossips with random peers via \verb|HTTP| requests.
+    \item Tracks state in-memory (\verb|my_data|, \verb|log_data|).
+    \item Records metrics: number of messages, start/end time.
+\end{itemize}
+
+\subsection*{Log Viewer (\texttt{log\_viewer.py})}
+\begin{itemize}
+    \item Web-based interface for observing node states.
+    \item Sends messages to the system and shows convergence chart.
+    \item Includes restart button to manually reset the system state.
+\end{itemize}
+
+\subsection*{Web page interface (\texttt{logs.html})}
+\begin{itemize}
+    \item Main \verb|HTML| template rendered.
+    \item Contains the message input form for sending new messages.
+    \item Includes containers for:
+    \begin{itemize}
+        \item Network visualization (\verb|div#network-container|).
+        \item Message count line chart (\verb|canvas#metricsChart|).
+        \item Propagation time bar chart (\verb|canvas#timeHistogram|).
+    \end{itemize}
+    \item Loads \verb|vis-network| and \verb|Chart.js| from CDN.
+    \item Loads \verb|main.js| for all frontend logic.
+    \item Provides the initial structure for all dynamic visualizations.
+\end{itemize}
+
+\subsection*{Styles (\texttt{style.css})}
+\begin{itemize}
+    \item Styles the layout and appearance of all UI elements.
+    \item Uses \verb|CSS Grid| to arrange the network and charts.
+    \item Styles the message input form, buttons, and controls.
+    \item Styles the network visualization container.
+    \item Provides responsive design for mobile and desktop screens.
+    \item Adds color coding, animations, and visual feedback for user actions.
+\end{itemize}
+
+\subsection*{Web page functionality (\texttt{main.js})}
+\begin{itemize}
+    \item Initializes and manages the network visualization using \verb|vis-network|.
+    \item Initializes and updates the message count line chart and propagation time bar chart using \verb|Chart.js|.
+    \item Sends new messages to the backend via \verb|/send-message (POST)|.
+    \item Periodically fetches \verb|/metrics (GET)| to update network state and charts.
+    \item Handles user interactions, error display, and UI feedback.
+\end{itemize}
+
+\subsection*{API Overview}
+\begin{itemize}
+    \item \texttt{/data} (POST) - send new message
+    \item \texttt{/state} (GET) - fetch current node state
+    \item \texttt{/log} (GET) - fetch gossip log
+    \item \texttt{/metrics} (GET) - Prometheus metrics
+    \item \texttt{/send-message} (POST) - send a new message to the system
+\end{itemize}
+
+\subsection*{Testing}
+We wrote unit test to verify:
+\begin{itemize}
+    \item Nodes are active and respond correctly
+    \item Messages propagate correctly via gossip
+    \item State convergence is reached
+    \item \verb|Prometheus| metrics are accurate
+\end{itemize}
+Additionally, we used \textbf{GitHub Actions} to automate testing. A \verb|YAML| workflow file was created to spin up multiple gossip nodes using Docker, send test messages through the system, and validate the propagation and convergence behavior. This ensured that the entire system worked correctly in a clean and reproducible environment.
+
+\section{Results' overwiew}
+
+Visualization Start Page:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/Screenshot 2025-05-17 at 6.28.10 PM.png}
+    \label{fig:screenshot1}
+\end{figure}
+The process of synchronizing a message between nodes:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/Screenshot 2025-05-17 at 6.28.38 PM.png}
+    \label{fig:screenshot2}
+\end{figure}
+End of message synchronization and metrics output:
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/Screenshot 2025-05-17 at 6.29.01 PM.png}
+    \label{fig:screenshot3}
+\end{figure}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/Screenshot 2025-05-17 at 6.29.07 PM.png}
+    \label{fig:screenshot4}
+\end{figure}
+
+
+\section{Difficulties faced / New skills acquired}
+
+\subsection*{Difficulties}
+\begin{itemize}
+    \item Challenges with handling timestamps for convergence graph generation.
+    \item Difficulties in choosing appropriate delays between message transmissions to maintain synchronization accuracy.
+    \item The convergence graph sometimes does not update automatically — we had to add a manual restart button.
+    \item When sending a new message, the previous graph is not cleared.
+    \item In general — debugging asynchronous behavior and visualizing the state of nodes was quite challenging.
+\end{itemize}
+
+\subsection*{New Skills Acquired}
+\begin{itemize}
+    \item Working with \verb|Prometheus| and collecting real-time metrics.
+    \item Developing asynchronous microservices using \verb|Flask|.
+    \item Integrating graphs and visualizations with backend APIs.
+    \item Configuring \verb|Nginx|.
+\end{itemize}
+
+\section{Conclusion}
+
+This project helped us better understand the core mechanics behind gossip-based communication and how it applies in modern distributed systems. We successfully implemented a simplified but functional version of such a system, including message dissemination, convergence detection, and real-time metric monitoring.\\\\
+Despite a few unresolved issues in the UI refresh logic, the system works as intended and can demonstrate the convergence behavior of gossip protocols. In the future, we would like to improve the UI responsiveness and enhance metric reporting for better user experience and performance evaluation.\\\\
+\textbf{Code Repository and Resources:}
+\begin{itemize}
+    \item \textbf{Repository:} \url{https://github.com/MiranaDun/gossip-app}
+    \item \textbf{Demo:} \url{https://github.com/MiranaDun/gossip-app/blob/main/demo/demo.mp4}
+\end{itemize}
+
+\end{document}

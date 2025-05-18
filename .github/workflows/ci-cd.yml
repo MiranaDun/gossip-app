@@ -9,28 +9,29 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v3
-    
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
-        
+
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install -r backend/requirements-test.txt
-        
+
     - name: Build and start Docker containers
       run: |
-        docker-compose up -d --build
-        
+        docker compose up -d --build
+
     - name: Wait for services to be ready
       run: |
-        sleep 50
-        
+        sleep 10
+
     - name: Run tests
       env:
         NODE_BASE_URL: http://localhost
@@ -39,16 +40,16 @@ jobs:
       run: |
         cd backend
         python -m pytest tests/test_gossip.py -v --tb=short
-        
+
     - name: Check test results
       if: always()
       run: |
         echo "=== Container Status ==="
-        docker-compose ps
+        docker compose ps
         echo "=== Container Logs ==="
-        docker-compose logs
-        
+        docker compose logs
+
     - name: Cleanup
       if: always()
       run: |
-        docker-compose down -v 
+        docker compose down -v
