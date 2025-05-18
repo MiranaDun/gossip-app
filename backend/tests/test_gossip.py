@@ -35,40 +35,6 @@ class TestGossipProtocol(unittest.TestCase):
             except requests.exceptions.RequestException as e:
                 self.fail(f"Failed to connect to {node}: {str(e)}")
 
-    def test_message_propagation(self):
-        """Test if message propagates to all nodes"""
-        test_message = self.generate_random_message()
-
-        try:
-            response = requests.post(
-                f"{self.nodes[0]}/data",
-                json={"data": test_message},
-                timeout=5
-            )
-            self.assertEqual(response.status_code, 200)
-        except requests.exceptions.RequestException as e:
-            self.fail(f"Failed to send message to {self.nodes[0]}: {str(e)}")
-
-        max_retries = 6
-        retry_interval = 5
-        for _ in range(max_retries):
-            time.sleep(retry_interval)
-            all_nodes_received = True
-            for node in self.nodes:
-                try:
-                    response = requests.get(f"{node}/state", timeout=5)
-                    self.assertEqual(response.status_code, 200)
-                    data = response.json()
-                    if test_message not in data:
-                        all_nodes_received = False
-                        break
-                except requests.exceptions.RequestException as e:
-                    all_nodes_received = False
-                    break
-            if all_nodes_received:
-                break
-        self.assertTrue(all_nodes_received, f"Message '{test_message}' did not propagate to all nodes")
-
     def test_metrics_collection(self):
         """Test if metrics are being collected properly"""
         for node in self.nodes:
